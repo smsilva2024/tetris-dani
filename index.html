@@ -21,6 +21,8 @@
   <button onclick="move(1, 0)">➡️</button>
   <button onclick="drop()">⬇️</button>
   <button onclick="hardDrop()">⏬</button>
+  <button onclick="pauseGame()" style="background:#a80;">⏸️ Pause</button>
+  <button onclick="startGame()" style="background:#0a8;">▶️ Start</button>
 </div>
 <script>
 const canvas = document.getElementById("tetris");
@@ -45,6 +47,7 @@ let board = [];
 let score = 0;
 let gameOver = false;
 let golfWin = false;
+let paused = false;
 let current, currentColor, pos;
 let dropCounter = 0;
 let dropInterval = 500;
@@ -75,7 +78,8 @@ function draw() {
   });
   ctx.fillStyle = "white";
   ctx.fillText(`Score: ${score}`, 10, 20);
-  if (golfWin) showMessage("BOLINHA DE GOLFE!", "green");
+  if (paused) showMessage("PAUSADO", "#fa0");
+  else if (golfWin) showMessage("BOLINHA DE GOLFE!", "green");
   else if (gameOver) showMessage("Game Over!", "red");
 }
 
@@ -172,8 +176,10 @@ function move(dx, dy) {
 function update(time = 0) {
   const delta = time - lastTime;
   lastTime = time;
-  dropCounter += delta;
-  if (dropCounter > dropInterval && !gameOver) drop();
+  if (!paused && !gameOver) {
+    dropCounter += delta;
+    if (dropCounter > dropInterval) drop();
+  }
   draw();
   requestAnimationFrame(update);
 }
@@ -183,7 +189,19 @@ function restart() {
   score = 0;
   gameOver = false;
   golfWin = false;
+  paused = false;
   newPiece();
+}
+
+function pauseGame() {
+  paused = true;
+}
+
+function startGame() {
+  if (gameOver) {
+    restart();
+  }
+  paused = false;
 }
 
 document.addEventListener("keydown", e => {
@@ -200,4 +218,3 @@ update();
 </script>
 </body>
 </html>
-``` 
