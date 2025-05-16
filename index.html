@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -7,15 +6,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <style>
     body { background: #000; margin: 0; overflow: hidden; color: white; font-family: Arial; text-align: center; }
-    canvas { background: black; border: 2px solid white; display: block; margin: 10px auto; width: 90vw; height: auto; max-width: 300px; }
-    .controls { margin: 10px auto; max-width: 300px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
-    button { flex: 1 0 30%; padding: 10px; font-size: 16px; border-radius: 8px; border: none; background: #444; color: white; }
+    canvas { background: black; border: 2px solid white; display: block; margin: 10px auto; width: 95vw; height: auto; max-width: 140px; }
+    .controls { margin: 10px auto; max-width: 160px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+    button { flex: 1 0 30%; padding: 6px; font-size: 11px; border-radius: 6px; border: none; background: #444; color: white; }
     button:hover { background: #666; }
   </style>
 </head>
 <body>
 <h2 style="color:white">DANI-TETRIS</h2>
-<canvas id="tetris" width="220" height="440"></canvas>
+<canvas id="tetris" width="140" height="280"></canvas>
 <div class="controls">
   <button onclick="move(-1, 0)">⬅️</button>
   <button onclick="rotatePiece()">🔄</button>
@@ -24,17 +23,32 @@
   <button onclick="hardDrop()">⏬</button>
 </div>
 <script>
-let canvas = document.getElementById("tetris");
-let ctx = canvas.getContext("2d");
-let CELL = 22;
-let ROWS = 20;
-let COLS = 10;
-let COLORS = ["cyan", "yellow", "purple", "blue", "orange", "green", "red"];
-let SHAPES = [[[1,1,1,1]],[[1,1],[1,1]],[[0,1,0],[1,1,1]],[[1,0,0],[1,1,1]],[[0,0,1],[1,1,1]],[[1,1,0],[0,1,1]],[[0,1,1],[1,1,0]]];
+const canvas = document.getElementById("tetris");
+const ctx = canvas.getContext("2d");
+const CELL = 14;
+const ROWS = 20;
+const COLS = 10;
+const COLORS = ["cyan", "yellow", "purple", "blue", "orange", "green", "red"];
+
+const SHAPES = [
+  [[1, 1, 1, 1]],
+  [[1, 1], [1, 1]],
+  [[0, 1, 0], [1, 1, 1]],
+  [[1, 0, 0], [1, 1, 1]],
+  [[0, 0, 1], [1, 1, 1]],
+  [[1, 1, 0], [0, 1, 1]],
+  [[0, 1, 1], [1, 1, 0]]
+];
+
 let shapeIdxList = [0,0,0,0,0,1,2,3,4,5,6];
-let board = [], score = 0, gameOver = false, golfWin = false;
+let board = [];
+let score = 0;
+let gameOver = false;
+let golfWin = false;
 let current, currentColor, pos;
-let dropCounter = 0, dropInterval = 500, lastTime = 0;
+let dropCounter = 0;
+let dropInterval = 500;
+let lastTime = 0;
 
 function createBoard() {
   board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
@@ -49,8 +63,16 @@ function drawCell(x, y, color) {
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  board.forEach((row, y) => row.forEach((val, x) => val && drawCell(x, y, COLORS[val - 1])));
-  current.forEach((row, yOffset) => row.forEach((val, xOffset) => val && drawCell(pos.x + xOffset, pos.y + yOffset, currentColor)));
+  board.forEach((row, y) => {
+    row.forEach((val, x) => {
+      if (val) drawCell(x, y, COLORS[val - 1]);
+    });
+  });
+  current.forEach((row, yOffset) => {
+    row.forEach((val, xOffset) => {
+      if (val) drawCell(pos.x + xOffset, pos.y + yOffset, currentColor);
+    });
+  });
   ctx.fillStyle = "white";
   ctx.fillText(`Score: ${score}`, 10, 20);
   if (golfWin) showMessage("BOLINHA DE GOLFE!", "green");
@@ -59,13 +81,13 @@ function draw() {
 
 function showMessage(msg, color) {
   ctx.fillStyle = color;
-  ctx.font = "28px Arial";
+  ctx.font = "18px Arial";
   ctx.textAlign = "center";
   ctx.fillText(msg, canvas.width / 2, canvas.height / 2);
 }
 
 function newPiece() {
-  let idx = shapeIdxList[Math.floor(Math.random() * shapeIdxList.length)];
+  const idx = shapeIdxList[Math.floor(Math.random() * shapeIdxList.length)];
   current = SHAPES[idx].map(r => r.slice());
   currentColor = COLORS[idx];
   pos = { x: Math.floor(COLS / 2) - Math.floor(current[0].length / 2), y: 0 };
@@ -83,11 +105,21 @@ function rotatePiece() {
 }
 
 function valid(shape, p) {
-  return shape.every((row, y) => row.every((val, x) => !val || (p.y + y >= 0 && p.y + y < ROWS && p.x + x >= 0 && p.x + x < COLS && !board[p.y + y][p.x + x])));
+  return shape.every((row, y) => {
+    return row.every((val, x) => {
+      if (!val) return true;
+      const xx = p.x + x, yy = p.y + y;
+      return yy >= 0 && yy < ROWS && xx >= 0 && xx < COLS && !board[yy][xx];
+    });
+  });
 }
 
 function fixPiece() {
-  current.forEach((row, y) => row.forEach((val, x) => val && (board[pos.y + y][pos.x + x] = COLORS.indexOf(currentColor) + 1)));
+  current.forEach((row, y) => {
+    row.forEach((val, x) => {
+      if (val) board[pos.y + y][pos.x + x] = COLORS.indexOf(currentColor) + 1;
+    });
+  });
   clearLines();
   checkGolfWin();
   newPiece();
@@ -95,15 +127,26 @@ function fixPiece() {
 
 function clearLines() {
   let lines = 0;
-  board = board.filter(row => (row.includes(0) || !++lines));
+  board = board.filter(row => {
+    if (row.some(cell => cell === 0)) return true;
+    lines++;
+    return false;
+  });
   while (board.length < ROWS) board.unshift(Array(COLS).fill(0));
   score += lines * 100;
 }
 
 function checkGolfWin() {
   for (let x = 0; x < COLS; x++) {
-    let count = board.reduce((sum, row) => sum + (row[x] === 2 ? 1 : 0), 0);
-    if (count >= 6) return (golfWin = gameOver = true);
+    let count = 0;
+    for (let y = 0; y < ROWS; y++) {
+      if (board[y][x] === 2) count++;
+    }
+    if (count >= 6) {
+      golfWin = true;
+      gameOver = true;
+      break;
+    }
   }
 }
 
@@ -118,8 +161,11 @@ function hardDrop() {
 }
 
 function move(dx, dy) {
-  let newPos = { x: pos.x + dx, y: pos.y + dy };
-  if (valid(current, newPos)) return (pos = newPos, true);
+  const newPos = { x: pos.x + dx, y: pos.y + dy };
+  if (valid(current, newPos)) {
+    pos = newPos;
+    return true;
+  }
   return false;
 }
 
@@ -154,3 +200,4 @@ update();
 </script>
 </body>
 </html>
+``` 
