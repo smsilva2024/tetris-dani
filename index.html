@@ -3,33 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <title>DANI-TETRIS (HTML5)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { background: #000; margin: 0; overflow: hidden; color: white; font-family: Arial; }
-    canvas { display: block; margin: auto; background: black; border: 2px solid white; }
+    body { background: #000; margin: 0; overflow: hidden; color: white; font-family: Arial; text-align: center; }
+    canvas { background: black; border: 2px solid white; display: block; margin: auto; }
+    .controls { margin-top: 10px; }
+    button { margin: 5px; padding: 10px 15px; font-size: 18px; border-radius: 8px; border: none; background: #444; color: white; }
+    button:hover { background: #666; }
   </style>
 </head>
 <body>
-<canvas id="tetris" width="220" height="440"></canvas>
+<h2 style="color:white">DANI-TETRIS</h2>
+<canvas id="tetris" width="330" height="660"></canvas>
+<div class="controls">
+  <button onclick="move(-1, 0)">⬅️</button>
+  <button onclick="rotatePiece()">🔄</button>
+  <button onclick="move(1, 0)">➡️</button><br>
+  <button onclick="drop()">⬇️</button>
+  <button onclick="hardDrop()">⏬</button>
+</div>
 <script>
 const canvas = document.getElementById("tetris");
 const ctx = canvas.getContext("2d");
-const CELL = 22;
+const CELL = 33;
 const ROWS = 20;
 const COLS = 10;
 const COLORS = ["cyan", "yellow", "purple", "blue", "orange", "green", "red"];
 
 const SHAPES = [
-  [[1, 1, 1, 1]], // I
-  [[1, 1], [1, 1]], // O
-  [[0, 1, 0], [1, 1, 1]], // T
-  [[1, 0, 0], [1, 1, 1]], // J
-  [[0, 0, 1], [1, 1, 1]], // L
-  [[1, 1, 0], [0, 1, 1]], // S
-  [[0, 1, 1], [1, 1, 0]]  // Z
+  [[1, 1, 1, 1]],
+  [[1, 1], [1, 1]],
+  [[0, 1, 0], [1, 1, 1]],
+  [[1, 0, 0], [1, 1, 1]],
+  [[0, 0, 1], [1, 1, 1]],
+  [[1, 1, 0], [0, 1, 1]],
+  [[0, 1, 1], [1, 1, 0]]
 ];
 
 let shapeIdxList = [0,0,0,0,0,1,2,3,4,5,6];
-
 let board = [];
 let score = 0;
 let gameOver = false;
@@ -87,6 +98,12 @@ function rotate(shape) {
   return shape[0].map((_, i) => shape.map(row => row[i]).reverse());
 }
 
+function rotatePiece() {
+  if (gameOver) return;
+  const rotated = rotate(current);
+  if (valid(rotated, pos)) current = rotated;
+}
+
 function valid(shape, p) {
   return shape.every((row, y) => {
     return row.every((val, x) => {
@@ -123,7 +140,7 @@ function checkGolfWin() {
   for (let x = 0; x < COLS; x++) {
     let count = 0;
     for (let y = 0; y < ROWS; y++) {
-      if (board[y][x] === 2) count++; // amarelo
+      if (board[y][x] === 2) count++;
     }
     if (count >= 6) {
       golfWin = true;
@@ -136,6 +153,11 @@ function checkGolfWin() {
 function drop() {
   if (!move(0, 1)) fixPiece();
   dropCounter = 0;
+}
+
+function hardDrop() {
+  while (move(0, 1)) {}
+  fixPiece();
 }
 
 function move(dx, dy) {
@@ -169,13 +191,8 @@ document.addEventListener("keydown", e => {
   if (e.key === "ArrowLeft") move(-1, 0);
   else if (e.key === "ArrowRight") move(1, 0);
   else if (e.key === "ArrowDown") drop();
-  else if (e.key === "ArrowUp") {
-    const rotated = rotate(current);
-    if (valid(rotated, pos)) current = rotated;
-  } else if (e.code === "Space") {
-    while (move(0, 1)) {}
-    fixPiece();
-  }
+  else if (e.key === "ArrowUp") rotatePiece();
+  else if (e.code === "Space") hardDrop();
 });
 
 restart();
