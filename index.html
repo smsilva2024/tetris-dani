@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>DANI-TETRIS (HTML5)</title>
+  <style>
+    body { background: #000; margin: 0; overflow: hidden; color: white; font-family: Arial; }
+    canvas { display: block; margin: auto; background: black; border: 2px solid white; }
+  </style>
+</head>
+<body>
+<canvas id="tetris" width="220" height="440"></canvas>
+<script>
+const canvas = document.getElementById("tetris");
+const ctx = canvas.getContext("2d");
+const CELL = 22;
+const ROWS = 20;
+const COLS = 10;
+const COLORS = ["cyan", "yellow", "purple", "blue", "orange", "green", "red"];
+
+const SHAPES = [
+  [[1, 1, 1, 1]], // I
+  [[1, 1], [1, 1]], // O
+  [[0, 1, 0], [1, 1, 1]], // T
+  [[1, 0, 0], [1, 1, 1]], // J
+  [[0, 0, 1], [1, 1, 1]], // L
+  [[1, 1, 0], [0, 1, 1]], // S
+  [[0, 1, 1], [1, 1, 0]]  // Z
+];
+
+let shapeIdxList = [0,0,0,0,0,1,2,3,4,5,6];
+
+let board = [];
+let score = 0;
+let gameOver = false;
+let golfWin = false;
+let current, currentColor, pos;
+let dropCounter = 0;
+let dropInterval = 500;
+let lastTime = 0;
+
+function createBoard() {
+  board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+}
+
+function drawCell(x, y, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+  ctx.strokeStyle = "gray";
+  ctx.strokeRect(x * CELL, y * CELL, CELL, CELL);
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  board.forEach((row, y) => {
+    row.forEach((val, x) => {
+      if (val) drawCell(x, y, COLORS[val - 1]);
+    });
+  });
+  current.forEach((row, yOffset) => {
+    row.forEach((val, xOffset) => {
+      if (val) drawCell(pos.x + xOffset, pos.y + yOffset, currentColor);
+    });
+  });
+  ctx.fillStyle = "white";
+  ctx.fillText(`Score: ${score}`, 10, 20);
+  if (golfWin) showMessage("BOLINHA DE GOLFE!", "green");
+  else if (gameOver) showMessage("Game Over!", "red");
+}
+
+function showMessage(msg, color) {
+  ctx.fillStyle = color;
+  ctx.font = "28px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(msg, canvas.width / 2, canvas.height / 2);
+}
+
+function newPiece() {
+  const idx = shapeIdxList[Math.floor(Math.random() * shapeIdxList.length)];
+  current = SHAPES[idx].map(r => r.slice());
+  currentColor = COLORS[idx];
+  pos = { x: Math.floor(COLS / 2) - Math.floor(current[0].length / 2), y: 0 };
+  if (!valid(current, pos)) gameOver = true;
+}
+
+function rotate(shape) {
+  return shape[0].map((_, i) => shape.map(row => row[i]).reverse());
+}
+
+function valid(shape, p) {
+  return shape.every((row, y) => {
+    return row.every((val, x) => {
+      if (!val) return true;
+      const xx = p.x + x, yy = p.y + y;
+      return yy >= 0 && yy < ROWS && xx >= 0 && xx < COLS && !board[yy][xx];
+    });
+  });
+}
+
+function fixPiece() {
+  current.forEach((row, y) => {
+    row.forEach((val, x) => {
+      if (val) board[pos.y + y][pos.x + x] = COLORS.indexOf(currentColor) + 1;
+    });
+  });
+  clearLines();
+  checkGolfWin();
+  newPiece();
+}
+
+function clearLines() {
+  let lines = 0;
+  board = board.filter(row => {
+    if (row.some(cell => cell === 0)) return true;
+    lines++;
+    return false;
+  });
+  while (board.length < ROWS) board.unshift(Array(COLS).fill(0));
+  score += lines * 100;
+}
+
+function checkGolfWin() {
+  for (let x = 0; x < COLS; x++) {
+    let count = 0;
+    for (let y = 0; y < ROWS; y++) {
+      if (board[y][x] === 2) count++; // amarelo
+    }
+    if (count >= 6) {
+      golfWin = true;
+      gameOver = true;
+      break;
+    }
+  }
+}
+
+function drop() {
+  if (!move(0, 1)) fixPiece();
+  dropCounter = 0;
+}
+
+function move(dx, dy) {
+  const newPos = { x: pos.x + dx, y: pos.y + dy };
+  if (valid(current, newPos)) {
+    pos = newPos;
+    return true;
+  }
+  return false;
+}
+
+function update(time = 0) {
+  const delta = time - lastTime;
+  lastTime = time;
+  dropCounter += delta;
+  if (dropCounter > dropInterval && !gameOver) drop();
+  draw();
+  requestAnimationFrame(update);
+}
+
+function restart() {
+  createBoard();
+  score = 0;
+  gameOver = false;
+  golfWin = false;
+  newPiece();
+}
+
+document.addEventListener("keydown", e => {
+  if (gameOver) return;
+  if (e.key === "ArrowLeft") move(-1, 0);
+  else if (e.key === "ArrowRight") move(1, 0);
+  else if (e.key === "ArrowDown") drop();
+  else if (e.key === "ArrowUp") {
+    const rotated = rotate(current);
+    if (valid(rotated, pos)) current = rotated;
+  } else if (e.code === "Space") {
+    while (move(0, 1)) {}
+    fixPiece();
+  }
+});
+
+restart();
+update();
+</script>
+</body>
+</html>
